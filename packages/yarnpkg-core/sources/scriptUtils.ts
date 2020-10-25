@@ -31,8 +31,8 @@ enum PackageManager {
 async function makePathWrapper(location: PortablePath, name: Filename, argv0: NativePath, args: Array<string> = []) {
   if (process.platform === `win32`) {
     await Promise.all([
-      // xfs.writeFilePromise(ppath.format({dir: location, name, ext: `.exe`}), getBinjumper()),
-      // xfs.writeFilePromise(ppath.format({dir: location, name, ext: `.exe.info`}), [argv0, ...args].join(`\n`)),
+      xfs.writeFilePromise(ppath.format({dir: location, name, ext: `.exe`}), getBinjumper()),
+      xfs.writeFilePromise(ppath.format({dir: location, name, ext: `.exe.info`}), [argv0, ...args].join(`\n`)),
       xfs.writeFilePromise(ppath.format({dir: location, name, ext: `.cmd`}), `@"${argv0}" ${args.map(arg => `"${arg.replace(`"`, `""`)}"`).join(` `)} %*\n`),
     ]);
   }
@@ -78,7 +78,8 @@ export async function makeScriptEnv({project, binFolder, lifecycleScript}: {proj
 
   // Register some binaries that must be made available in all subprocesses
   // spawned by Yarn (we thus ensure that they always use the right version)
-  await makePathWrapper(binFolder, `node` as Filename, process.execPath);
+  const execPath = npath.toPortablePath(process.execPath);
+  await xfs.linkPromise(execPath, ppath.join(binFolder, ppath.basename(execPath)));
 
   if (YarnVersion !== null) {
     await makePathWrapper(binFolder, `run` as Filename, process.execPath, [process.argv[1], `run`]);
